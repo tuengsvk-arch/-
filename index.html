@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Savings Tracker</title>
-    <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,7 +23,6 @@
             เป้าหมายการออมของคุณ
         </h1>
 
-        <!-- Image section with file upload -->
         <div class="relative w-full h-64 md:h-80 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 overflow-hidden border-2 border-dashed border-gray-700">
             <img id="goal-image" src="https://placehold.co/600x400/18181b/ffffff?text=อัปโหลดรูปภาพเป้าหมาย" alt="Goal Image" class="w-full h-full object-cover transition-opacity duration-300">
             <label for="image-uploader" class="absolute inset-0 flex items-center justify-center cursor-pointer text-gray-500 hover:text-gray-400">
@@ -33,21 +31,20 @@
             </label>
         </div>
 
-        <!-- Input fields section -->
         <div class="space-y-4 mb-6">
             <div>
                 <label for="goal-name" class="block text-gray-400 font-medium mb-1">ชื่อเป้าหมาย</label>
-                <input type="text" id="goal-name" placeholder="เช่น MacBook Pro" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300">
+                <input type="text" id="goal-name" placeholder="เช่น MacBook Pro" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus-ring-purple-500 transition-all duration-300">
             </div>
             
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label for="target-price" id="target-price-label" class="block text-gray-400 font-medium mb-1">ราคาเป้าหมาย (฿)</label>
-                    <input type="number" id="target-price" value="10000" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300">
+                    <input type="number" id="target-price" value="10000" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus-ring-purple-500 transition-all duration-300">
                 </div>
                 <div>
                     <label for="currency-selector" class="block text-gray-400 font-medium mb-1">สกุลเงิน</label>
-                    <select id="currency-selector" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300">
+                    <select id="currency-selector" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus-ring-purple-500 transition-all duration-300">
                         <option value="THB">บาทไทย (฿)</option>
                         <option value="LAK">กีบลาว (₭)</option>
                         <option value="USD">ดอลลาร์สหรัฐ ($)</option>
@@ -57,11 +54,10 @@
 
             <div>
                 <label for="current-savings" id="current-savings-label" class="block text-gray-400 font-medium mb-1">เงินที่มีอยู่ตอนนี้ (฿)</label>
-                <input type="number" id="current-savings" value="100" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300">
+                <input type="number" id="current-savings" value="100" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus-ring-purple-500 transition-all duration-300">
             </div>
         </div>
 
-        <!-- Progress bar and percentage display -->
         <div class="mb-4">
             <div class="flex justify-between items-center mb-2">
                 <span id="percentage-text" class="text-white text-xl md:text-2xl font-bold">1%</span>
@@ -71,7 +67,6 @@
             </div>
         </div>
 
-        <!-- Motivational message -->
         <p id="motivational-message" class="text-center text-gray-400 text-sm italic">
             เหลืออีก 9,900 บาท! สู้ๆ นะ!
         </p>
@@ -81,6 +76,7 @@
         // Get references to all necessary DOM elements
         const targetPriceInput = document.getElementById('target-price');
         const currentSavingsInput = document.getElementById('current-savings');
+        const goalNameInput = document.getElementById('goal-name');
         const progressBar = document.getElementById('progress-bar');
         const percentageText = document.getElementById('percentage-text');
         const motivationalMessage = document.getElementById('motivational-message');
@@ -90,6 +86,8 @@
         const currencySelector = document.getElementById('currency-selector');
         const targetPriceLabel = document.getElementById('target-price-label');
         const currentSavingsLabel = document.getElementById('current-savings-label');
+
+        const STORAGE_KEY = 'savingsTrackerData';
 
         // Function to get the currency symbol based on the selected value
         function getCurrencySymbol(currency) {
@@ -102,6 +100,41 @@
                     return '$';
                 default:
                     return '';
+            }
+        }
+        
+        // Function to save data to localStorage
+        function saveData() {
+            const data = {
+                goalName: goalNameInput.value,
+                targetPrice: targetPriceInput.value,
+                currentSavings: currentSavingsInput.value,
+                currency: currencySelector.value,
+                image: goalImage.src // Save the data URL of the image
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // Function to load data from localStorage
+        function loadData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                goalNameInput.value = data.goalName || '';
+                targetPriceInput.value = data.targetPrice || '10000';
+                currentSavingsInput.value = data.currentSavings || '100';
+                currencySelector.value = data.currency || 'THB';
+
+                // Handle image loading
+                if (data.image && data.image.startsWith('data:')) {
+                    goalImage.src = data.image;
+                    uploadText.style.opacity = '0';
+                    goalImage.style.opacity = '1';
+                } else {
+                    goalImage.src = "https://placehold.co/600x400/18181b/ffffff?text=อัปโหลดรูปภาพเป้าหมาย";
+                    uploadText.style.opacity = '1';
+                    goalImage.style.opacity = '1';
+                }
             }
         }
 
@@ -150,6 +183,9 @@
             } else {
                 motivationalMessage.textContent = `เหลืออีก ${remainingAmount.toLocaleString()} ${currencySymbol}! สู้ๆ นะ!`;
             }
+            
+            // Save data after every progress update
+            saveData();
         }
 
         // Function to handle image upload and preview
@@ -161,19 +197,24 @@
                     goalImage.src = e.target.result;
                     uploadText.style.opacity = '0'; // Hide the upload text
                     goalImage.style.opacity = '1'; // Show the image
+                    saveData(); // Save the new image data
                 };
                 reader.readAsDataURL(file);
             }
         }
 
-        // Add event listeners to trigger the updateProgress function on input change
+        // Add event listeners to trigger the updateProgress and saveData functions
+        goalNameInput.addEventListener('input', updateProgress);
         targetPriceInput.addEventListener('input', updateProgress);
         currentSavingsInput.addEventListener('input', updateProgress);
         currencySelector.addEventListener('change', updateProgress);
         imageUploader.addEventListener('change', handleImageUpload);
 
         // Initial call to set the progress bar state on page load
-        document.addEventListener('DOMContentLoaded', updateProgress);
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData(); // Load data first
+            updateProgress(); // Then update the progress bar based on loaded data
+        });
     </script>
 
 </body>
