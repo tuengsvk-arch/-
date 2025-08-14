@@ -1,48 +1,39 @@
 <!DOCTYPE html>
-<html lang="th">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>การออมเงิน</title>
-<style>
+  <meta charset="UTF-8">
+  <title>แอปออมเงิน</title>
+  <style>
     body {
-        background-color: #1e1e1e;
-        color: #f0f0f0;
-        font-family: Arial, sans-serif;
-        text-align: center;
-        padding: 20px;
+      background-color: #1e1e1e;
+      color: white;
+      font-family: sans-serif;
+      padding: 20px;
     }
     input {
-        padding: 10px;
-        font-size: 16px;
-        border-radius: 6px;
-        border: none;
-        margin-top: 10px;
-        background-color: #2b2b2b;
-        color: #fff;
-        text-align: right;
+      padding: 10px;
+      font-size: 16px;
+      width: 200px;
     }
-    #result {
-        margin-top: 20px;
-        font-size: 18px;
-    }
-</style>
+  </style>
 </head>
 <body>
-<h2>📦 คำนวณการออมเงิน</h2>
-<input type="text" id="amount" placeholder="ใส่จำนวนเงิน">
-<div id="result"></div>
+  <h1>กรอกจำนวนเงิน</h1>
+  <input type="text" id="money" placeholder="ใส่จำนวนเงิน">
 
-<script>
-const amountInput = document.getElementById("amount");
-amountInput.addEventListener("input", () => {
-    let value = amountInput.value.replace(/,/g, ""); // ลบคอมม่าเก่า
-    if (!isNaN(value) && value !== "") {
-        amountInput.value = Number(value).toLocaleString();
-        document.getElementById("result").innerText = "💰 " + amountInput.value + " บาท";
-    } else {
-        document.getElementById("result").innerText = "";
-    }
-});
-</script>
+  <script>
+    const moneyInput = document.getElementById('money');
+
+    moneyInput.addEventListener('input', function () {
+      // ลบทุกเครื่องหมายที่ไม่ใช่ตัวเลข
+      let value = this.value.replace(/,/g, '').replace(/\D/g, '');
+      // แปลงเป็นรูปแบบมีคอมมา
+      if (value) {
+        this.value = Number(value).toLocaleString();
+      } else {
+        this.value = '';
+      }
+    });
+  </script>
 </body>
 </html>
