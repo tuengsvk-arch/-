@@ -15,6 +15,17 @@
             background-color: #000000;
             color: #ffffff;
         }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2D3748;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6B46C1;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8 flex items-center justify-center min-h-screen">
@@ -145,6 +156,19 @@
 
         const STORAGE_KEY = 'savingsTrackerData';
 
+        // Helper function to format numbers with commas and two decimal places
+        function formatNumber(number) {
+            // Check if the number is valid and finite
+            if (isNaN(number) || !isFinite(number)) {
+                return '0.00';
+            }
+            // Use Intl.NumberFormat for locale-specific formatting
+            return new Intl.NumberFormat('th-TH', { 
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(number);
+        }
+
         // Function to get the currency symbol based on the selected value
         function getCurrencySymbol(currency) {
             switch (currency) {
@@ -167,7 +191,6 @@
                 currentSavings: currentSavingsInput.value,
                 currency: currencySelector.value,
                 image: goalImage.src, // Save the data URL of the image
-                // Save currency converter data
                 exchangeRate: exchangeRateInput.value
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
@@ -199,52 +222,39 @@
 
         // Function to update the progress bar and text
         function updateProgress() {
-            // Get the values from the input fields and parse them as floating-point numbers
             const targetPrice = parseFloat(targetPriceInput.value);
             const currentSavings = parseFloat(currentSavingsInput.value);
             const selectedCurrency = currencySelector.value;
             const currencySymbol = getCurrencySymbol(selectedCurrency);
 
-            // Update labels to show the correct currency symbol
             targetPriceLabel.textContent = `ราคาเป้าหมาย (${currencySymbol})`;
             currentSavingsLabel.textContent = `เงินที่มีอยู่ตอนนี้ (${currencySymbol})`;
 
-            // Check if the inputs are valid numbers and the target price is not zero or negative
             if (isNaN(targetPrice) || isNaN(currentSavings) || targetPrice <= 0) {
                 progressBar.style.width = '0%';
                 percentageText.textContent = '0%';
                 motivationalMessage.textContent = 'กรุณากรอกราคาเป้าหมายที่ถูกต้อง';
                 saveData();
-                return; // Exit the function if inputs are invalid
+                return;
             }
 
-            // Calculate the percentage of savings
             let percentage = (currentSavings / targetPrice) * 100;
-
-            // Ensure the percentage is not more than 100% or less than 0%
             if (percentage > 100) {
                 percentage = 100;
             } else if (percentage < 0) {
                 percentage = 0;
             }
 
-            // Update the width of the progress bar
             progressBar.style.width = percentage.toFixed(2) + '%';
-
-            // Update the percentage text display
             percentageText.textContent = percentage.toFixed(2) + '%';
 
-            // Calculate the remaining amount needed
             const remainingAmount = targetPrice - currentSavings;
-
-            // Update the motivational message based on progress
             if (remainingAmount <= 0) {
                 motivationalMessage.textContent = 'ยินดีด้วย! คุณบรรลุเป้าหมายแล้ว!';
             } else {
-                motivationalMessage.textContent = `เหลืออีก ${remainingAmount.toLocaleString()} ${currencySymbol}! สู้ๆ นะ!`;
+                motivationalMessage.textContent = `เหลืออีก ${formatNumber(remainingAmount)} ${currencySymbol}! สู้ๆ นะ!`;
             }
             
-            // Save data after every progress update
             saveData();
         }
 
@@ -255,9 +265,9 @@
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     goalImage.src = e.target.result;
-                    uploadText.style.opacity = '0'; // Hide the upload text
-                    goalImage.style.opacity = '1'; // Show the image
-                    saveData(); // Save the new image data
+                    uploadText.style.opacity = '0';
+                    goalImage.style.opacity = '1';
+                    saveData();
                 };
                 reader.readAsDataURL(file);
             }
@@ -265,32 +275,39 @@
         
         // Function to fetch the latest exchange rate from an external API
         async function fetchExchangeRate() {
+            fetchRateBtn.disabled = true;
+            const originalText = fetchRateBtn.textContent;
+            fetchRateBtn.textContent = 'กำลังโหลด...';
+
             rateMessage.textContent = 'กำลังดึงข้อมูลอัตราแลกเปลี่ยนล่าสุด...';
             rateMessage.classList.remove('text-red-500');
             rateMessage.classList.add('text-gray-400');
             
-            // The API we will use for a free exchange rate, THB to LAK
             const apiUrl = 'https://api.exchangerate-api.com/v4/latest/THB';
 
             try {
                 const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
                 const data = await response.json();
                 
                 if (data.rates && data.rates.LAK) {
                     const lakRate = data.rates.LAK;
-                    exchangeRateInput.value = lakRate.toFixed(2); // Set the new rate
-                    rateMessage.textContent = `อัปเดตอัตราแลกเปลี่ยนแล้ว: 1 THB = ${lakRate.toFixed(2)} LAK`;
-                    saveData(); // Save the new rate
+                    exchangeRateInput.value = lakRate.toFixed(2);
+                    rateMessage.textContent = `อัปเดตอัตราแลกเปลี่ยนสำเร็จ: 1 THB = ${lakRate.toFixed(2)} LAK`;
+                    saveData();
                 } else {
-                    rateMessage.textContent = 'ไม่สามารถดึงข้อมูลอัตราแลกเปลี่ยนได้';
-                    rateMessage.classList.remove('text-gray-400');
-                    rateMessage.classList.add('text-red-500');
+                    throw new Error('Invalid API response structure');
                 }
             } catch (error) {
                 console.error('Error fetching exchange rate:', error);
-                rateMessage.textContent = 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองอีกครั้ง';
+                rateMessage.textContent = 'เกิดข้อผิดพลาดในการดึงข้อมูล. กรุณาลองอีกครั้ง';
                 rateMessage.classList.remove('text-gray-400');
                 rateMessage.classList.add('text-red-500');
+            } finally {
+                fetchRateBtn.disabled = false;
+                fetchRateBtn.textContent = originalText;
             }
         }
 
@@ -298,8 +315,9 @@
         function convertCurrency(direction) {
             const exchangeRate = parseFloat(exchangeRateInput.value);
             if (isNaN(exchangeRate) || exchangeRate <= 0) {
-                // Use a custom alert message box instead of the default alert()
-                alert('กรุณากรอกอัตราแลกเปลี่ยนที่ถูกต้อง');
+                rateMessage.textContent = 'กรุณากรอกอัตราแลกเปลี่ยนที่ถูกต้อง';
+                rateMessage.classList.remove('text-gray-400');
+                rateMessage.classList.add('text-red-500');
                 return;
             }
 
@@ -318,14 +336,12 @@
             }
         }
 
-        // Add event listeners to trigger the updateProgress and saveData functions
+        // Add event listeners
         goalNameInput.addEventListener('input', updateProgress);
         targetPriceInput.addEventListener('input', updateProgress);
         currentSavingsInput.addEventListener('input', updateProgress);
         currencySelector.addEventListener('change', updateProgress);
         imageUploader.addEventListener('change', handleImageUpload);
-
-        // Add event listeners for the currency converter
         convertToLakBtn.addEventListener('click', () => convertCurrency('thb_to_lak'));
         convertToThbBtn.addEventListener('click', () => convertCurrency('lak_to_thb'));
         thbAmountInput.addEventListener('input', () => { lakAmountInput.value = ''; saveData(); });
@@ -335,8 +351,8 @@
 
         // Initial call to set the progress bar state on page load
         document.addEventListener('DOMContentLoaded', () => {
-            loadData(); // Load data first
-            updateProgress(); // Then update the progress bar based on loaded data
+            loadData();
+            updateProgress();
         });
     </script>
 
