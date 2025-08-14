@@ -98,7 +98,7 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label for="target-price" id="target-price-label" class="block text-gray-400 font-medium mb-1">ราคาเป้าหมาย (฿)</label>
-                        <input type="text" id="target-price" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-right" placeholder="0.00">
+                        <input type="text" id="target-price" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-right" placeholder="0">
                     </div>
                     <div>
                         <label for="currency-selector" class="block text-gray-400 font-medium mb-1">สกุลเงิน</label>
@@ -112,14 +112,14 @@
 
                 <div>
                     <label for="current-savings" id="current-savings-label" class="block text-gray-400 font-medium mb-1">เงินที่มีอยู่ตอนนี้ (฿)</label>
-                    <input type="text" id="current-savings" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-right" placeholder="0.00">
+                    <input type="text" id="current-savings" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-right" placeholder="0">
                 </div>
             </div>
 
             <!-- Progress bar and percentage display -->
             <div class="mb-4">
                 <div class="flex justify-between items-center mb-2">
-                    <span id="percentage-text" class="text-white text-xl md:text-2xl font-bold">0.00%</span>
+                    <span id="percentage-text" class="text-white text-xl md:text-2xl font-bold">0%</span>
                 </div>
                 <div class="w-full bg-zinc-800 rounded-full h-4 overflow-hidden">
                     <div id="progress-bar" class="bg-purple-500 h-full rounded-full transition-all duration-500 ease-in-out" style="width: 0%;"></div>
@@ -129,7 +129,7 @@
             <!-- Motivational message and AI button -->
             <div class="relative">
                 <p id="motivational-message" class="text-center text-gray-400 text-sm italic">
-                    เหลืออีก 0.00 บาท! สู้ๆ นะ!
+                    เหลืออีก 0 บาท! สู้ๆ นะ!
                 </p>
             </div>
             
@@ -148,7 +148,7 @@
                 <div>
                     <label for="exchange-rate" class="block text-gray-400 font-medium mb-1">อัตราแลกเปลี่ยน (เช่น 1 THB = 700 LAK)</label>
                     <div class="flex items-center space-x-2">
-                        <input type="text" id="exchange-rate" placeholder="กรอกอัตราแลกเปลี่ยน" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right" placeholder="0.00">
+                        <input type="text" id="exchange-rate" placeholder="กรอกอัตราแลกเปลี่ยน" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right" placeholder="0">
                         <button id="fetch-rate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-lg transition duration-300 transform hover:scale-105 shadow-md whitespace-nowrap text-sm">
                             อัปเดตอัตราแลกเปลี่ยน
                         </button>
@@ -241,25 +241,19 @@
             customModal.classList.remove('hidden');
         }
 
-        // Helper function to format a number with commas and two decimal places
+        // Helper function to format a number with commas as a whole number
         function formatNumber(number) {
-            if (number === 0) {
-                return '0.00';
-            }
             if (isNaN(number) || !isFinite(number)) {
                 return '';
             }
-            return new Intl.NumberFormat('th-TH', { 
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            }).format(number);
+            return new Intl.NumberFormat('th-TH').format(Math.round(number));
         }
         
-        // Helper function to parse a formatted number string back to a float
+        // Helper function to parse a formatted number string back to an integer
         function parseFormattedNumber(formattedString) {
             if (!formattedString) return 0;
             const cleanedString = formattedString.replace(/,/g, '');
-            return parseFloat(cleanedString);
+            return parseInt(cleanedString) || 0;
         }
         
         // Function to get the currency symbol based on the selected value
@@ -324,7 +318,7 @@
 
             if (isNaN(targetPrice) || isNaN(currentSavings) || targetPrice <= 0) {
                 progressBar.style.width = '0%';
-                percentageText.textContent = '0.00%';
+                percentageText.textContent = '0%';
                 motivationalMessage.textContent = 'กรุณากรอกราคาเป้าหมายที่ถูกต้อง';
                 saveData();
                 return;
@@ -337,8 +331,8 @@
                 percentage = 0;
             }
 
-            progressBar.style.width = percentage.toFixed(2) + '%';
-            percentageText.textContent = percentage.toFixed(2) + '%';
+            progressBar.style.width = percentage.toFixed(0) + '%';
+            percentageText.textContent = percentage.toFixed(0) + '%';
 
             const remainingAmount = targetPrice - currentSavings;
             if (remainingAmount <= 0) {
@@ -430,7 +424,7 @@
             saveData();
         }
 
-        // New and improved function to handle input formatting without a cursor jump.
+        // Function to handle input formatting for whole numbers only
         let isFormatting = false;
         function handleInput(event) {
             if (isFormatting) return;
@@ -440,26 +434,11 @@
             const originalValue = input.value;
             const cursorPosition = input.selectionStart;
 
-            const cleanedString = originalValue.replace(/[^0-9.]/g, '');
-            let finalString = '';
-            const parts = cleanedString.split('.');
-            if (parts.length > 1) {
-                finalString = parts[0] + '.' + parts.slice(1).join('');
-            } else {
-                finalString = cleanedString;
-            }
+            // Remove all non-digit characters
+            const cleanedString = originalValue.replace(/[^0-9]/g, '');
+            const finalNumber = parseInt(cleanedString) || 0;
             
-            if (finalString.includes('.')) {
-                const [integerPart, decimalPart] = finalString.split('.');
-                let formattedInteger = new Intl.NumberFormat('th-TH').format(parseInt(integerPart) || 0);
-                if (decimalPart !== undefined) {
-                    input.value = `${formattedInteger}.${decimalPart}`;
-                } else {
-                    input.value = formattedInteger;
-                }
-            } else {
-                input.value = new Intl.NumberFormat('th-TH').format(parseInt(finalString) || 0);
-            }
+            input.value = new Intl.NumberFormat('th-TH').format(finalNumber);
             
             const lengthDifference = input.value.length - originalValue.length;
             const newCursorPosition = cursorPosition + lengthDifference;
@@ -479,7 +458,7 @@
             } else if (input.value === '') {
                 input.value = '';
             } else {
-                input.value = '0.00';
+                input.value = '0';
             }
             updateProgress();
             saveData();
