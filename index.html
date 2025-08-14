@@ -1,39 +1,622 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <title>แอปออมเงิน</title>
-  <style>
-    body {
-      background-color: #1e1e1e;
-      color: white;
-      font-family: sans-serif;
-      padding: 20px;
-    }
-    input {
-      padding: 10px;
-      font-size: 16px;
-      width: 200px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Savings Tracker</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #ffffff;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #2D3748;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #6B46C1;
+            border-radius: 4px;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #18181b;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
+            width: 400px;
+            text-align: center;
+        }
+        .breakdown-modal-content {
+            max-width: 90%;
+            width: 600px;
+        }
+        .breakdown-item {
+            background-color: #2D3748;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+        /* Hide the number input spinner buttons */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
 </head>
-<body>
-  <h1>กรอกจำนวนเงิน</h1>
-  <input type="text" id="money" placeholder="ใส่จำนวนเงิน">
+<body class="p-4 md:p-8 flex items-center justify-center min-h-screen">
+    
+    <!-- Main container for a balanced, side-by-side layout on larger screens -->
+    <div class="container mx-auto flex flex-col md:flex-row items-start md:space-x-8">
 
-  <script>
-    const moneyInput = document.getElementById('money');
+        <!-- Savings Tracker Section -->
+        <div class="w-full md:w-1/2 bg-zinc-900 rounded-xl p-6 md:p-8 shadow-lg mb-8 md:mb-0">
+            <h1 class="text-3xl md:text-4xl font-bold text-center text-white mb-6">
+                เป้าหมายการออมของคุณ
+            </h1>
 
-    moneyInput.addEventListener('input', function () {
-      // ลบทุกเครื่องหมายที่ไม่ใช่ตัวเลข
-      let value = this.value.replace(/,/g, '').replace(/\D/g, '');
-      // แปลงเป็นรูปแบบมีคอมมา
-      if (value) {
-        this.value = Number(value).toLocaleString();
-      } else {
-        this.value = '';
-      }
-    });
-  </script>
+            <!-- Image section with file upload -->
+            <div class="relative w-full h-64 md:h-80 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 overflow-hidden border-2 border-dashed border-gray-700">
+                <img id="goal-image" src="https://placehold.co/600x400/18181b/ffffff?text=อัปโหลดรูปภาพเป้าหมาย" alt="Goal Image" class="w-full h-full object-cover transition-opacity duration-300">
+                <label for="image-uploader" class="absolute inset-0 flex items-center justify-center cursor-pointer text-gray-500 hover:text-gray-400">
+                    <span id="upload-text" class="text-lg md:text-xl font-medium z-10 transition-opacity duration-300">คลิกเพื่ออัปโหลด</span>
+                    <input type="file" id="image-uploader" class="absolute inset-0 opacity-0 cursor-pointer">
+                </label>
+            </div>
+
+            <!-- Input fields section -->
+            <div class="space-y-4 mb-6">
+                <div>
+                    <label for="goal-name" class="block text-gray-400 font-medium mb-1">ชื่อเป้าหมาย</label>
+                    <input type="text" id="goal-name" placeholder="เช่น MacBook Pro" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="target-price" id="target-price-label" class="block text-gray-400 font-medium mb-1">ราคาเป้าหมาย (฿)</label>
+                        <input type="text" id="target-price" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-right" placeholder="0.00">
+                    </div>
+                    <div>
+                        <label for="currency-selector" class="block text-gray-400 font-medium mb-1">สกุลเงิน</label>
+                        <select id="currency-selector" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300">
+                            <option value="THB">บาทไทย (฿)</option>
+                            <option value="LAK">กีบลาว (₭)</option>
+                            <option value="USD">ดอลลาร์สหรัฐ ($)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="current-savings" id="current-savings-label" class="block text-gray-400 font-medium mb-1">เงินที่มีอยู่ตอนนี้ (฿)</label>
+                    <input type="text" id="current-savings" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300 text-right" placeholder="0.00">
+                </div>
+            </div>
+
+            <!-- Progress bar and percentage display -->
+            <div class="mb-4">
+                <div class="flex justify-between items-center mb-2">
+                    <span id="percentage-text" class="text-white text-xl md:text-2xl font-bold">0.00%</span>
+                </div>
+                <div class="w-full bg-zinc-800 rounded-full h-4 overflow-hidden">
+                    <div id="progress-bar" class="bg-purple-500 h-full rounded-full transition-all duration-500 ease-in-out" style="width: 0%;"></div>
+                </div>
+            </div>
+
+            <!-- Motivational message and AI button -->
+            <div class="relative">
+                <p id="motivational-message" class="text-center text-gray-400 text-sm italic">
+                    เหลืออีก 0.00 บาท! สู้ๆ นะ!
+                </p>
+            </div>
+            
+            <!-- New Gemini AI Feature: Goal Breakdown -->
+            <button id="breakdown-goal-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md mt-4">
+                แบ่งเป้าหมายการออม ✨
+            </button>
+        </div>
+
+        <!-- Currency Converter Section -->
+        <div class="w-full md:w-1/2 bg-zinc-900 rounded-xl p-6 md:p-8 shadow-lg">
+            <h2 class="text-2xl font-bold text-white mb-4 text-center">
+                เครื่องมือคำนวณอัตราแลกเปลี่ยน
+            </h2>
+            <div class="space-y-4">
+                <div>
+                    <label for="exchange-rate" class="block text-gray-400 font-medium mb-1">อัตราแลกเปลี่ยน (เช่น 1 THB = 700 LAK)</label>
+                    <div class="flex items-center space-x-2">
+                        <input type="text" id="exchange-rate" placeholder="กรอกอัตราแลกเปลี่ยน" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right" placeholder="0.00">
+                        <button id="fetch-rate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-lg transition duration-300 transform hover:scale-105 shadow-md whitespace-nowrap text-sm">
+                            อัปเดตอัตราแลกเปลี่ยน
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="thb-amount" class="block text-gray-400 font-medium mb-1">จำนวนเงิน (บาท)</label>
+                        <input type="text" id="thb-amount" placeholder="กรอกจำนวนเงินบาท" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right">
+                    </div>
+                    <div>
+                        <label for="lak-amount" class="block text-gray-400 font-medium mb-1">จำนวนเงิน (กีบ)</label>
+                        <input type="text" id="lak-amount" placeholder="จำนวนเงินกีบ" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right" disabled>
+                    </div>
+                </div>
+                <div class="flex flex-col md:flex-row gap-4">
+                    <button id="convert-to-lak" class="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md">
+                        คำนวณ บาท -> กีบ
+                    </button>
+                    <button id="convert-to-thb" class="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md">
+                        คำนวณ กีบ -> บาท
+                    </button>
+                </div>
+            </div>
+            <div id="rate-message" class="mt-4 text-center text-sm text-gray-500"></div>
+        </div>
+    </div>
+
+    <!-- Custom Modal/Message Box -->
+    <div id="custom-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <p id="modal-message" class="text-white text-lg font-medium mb-4">ข้อความ</p>
+            <button id="close-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">ปิด</button>
+        </div>
+    </div>
+
+    <!-- New Goal Breakdown Modal -->
+    <div id="breakdown-modal" class="modal-overlay hidden">
+        <div class="modal-content breakdown-modal-content text-left">
+            <h3 class="text-2xl font-bold text-white mb-4 text-center">แผนการออม ✨</h3>
+            <div id="breakdown-results" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                <!-- Breakdown results will be inserted here -->
+            </div>
+            <button id="close-breakdown-modal-btn" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">ปิด</button>
+        </div>
+    </div>
+
+    <script>
+        // Get references to all necessary DOM elements for Savings Tracker
+        const targetPriceInput = document.getElementById('target-price');
+        const currentSavingsInput = document.getElementById('current-savings');
+        const goalNameInput = document.getElementById('goal-name');
+        const progressBar = document.getElementById('progress-bar');
+        const percentageText = document.getElementById('percentage-text');
+        const motivationalMessage = document.getElementById('motivational-message');
+        const imageUploader = document.getElementById('image-uploader');
+        const goalImage = document.getElementById('goal-image');
+        const uploadText = document.getElementById('upload-text');
+        const currencySelector = document.getElementById('currency-selector');
+        const targetPriceLabel = document.getElementById('target-price-label');
+        const currentSavingsLabel = document.getElementById('current-savings-label');
+
+        // Get references to all necessary DOM elements for Currency Converter
+        const exchangeRateInput = document.getElementById('exchange-rate');
+        const thbAmountInput = document.getElementById('thb-amount');
+        const lakAmountInput = document.getElementById('lak-amount');
+        const convertToLakBtn = document.getElementById('convert-to-lak');
+        const convertToThbBtn = document.getElementById('convert-to-thb');
+        const fetchRateBtn = document.getElementById('fetch-rate-btn');
+        const rateMessage = document.getElementById('rate-message');
+        
+        // New Gemini API Buttons
+        const breakdownGoalBtn = document.getElementById('breakdown-goal-btn');
+
+        // Custom Modal elements
+        const customModal = document.getElementById('custom-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        
+        // Goal Breakdown Modal elements
+        const breakdownModal = document.getElementById('breakdown-modal');
+        const breakdownResults = document.getElementById('breakdown-results');
+        const closeBreakdownModalBtn = document.getElementById('close-breakdown-modal-btn');
+
+        const STORAGE_KEY = 'savingsTrackerData';
+
+        // Helper function to show a custom modal message
+        function showModal(message) {
+            modalMessage.textContent = message;
+            customModal.classList.remove('hidden');
+        }
+
+        // Helper function to format a number with commas and two decimal places
+        function formatNumber(number) {
+            if (number === 0) {
+                return '0.00';
+            }
+            if (isNaN(number) || !isFinite(number)) {
+                return '';
+            }
+            return new Intl.NumberFormat('th-TH', { 
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(number);
+        }
+        
+        // Helper function to parse a formatted number string back to a float
+        function parseFormattedNumber(formattedString) {
+            if (!formattedString) return 0;
+            const cleanedString = formattedString.replace(/,/g, '');
+            return parseFloat(cleanedString);
+        }
+        
+        // Function to get the currency symbol based on the selected value
+        function getCurrencySymbol(currency) {
+            switch (currency) {
+                case 'THB':
+                    return '฿';
+                case 'LAK':
+                    return '₭';
+                case 'USD':
+                    return '$';
+                default:
+                    return '';
+            }
+        }
+        
+        // Function to save data to localStorage
+        function saveData() {
+            const data = {
+                goalName: goalNameInput.value,
+                targetPrice: targetPriceInput.value,
+                currentSavings: currentSavingsInput.value,
+                currency: currencySelector.value,
+                image: goalImage.src,
+                exchangeRate: exchangeRateInput.value
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        // Function to load data from localStorage
+        function loadData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                const data = JSON.parse(savedData);
+                goalNameInput.value = data.goalName || '';
+                targetPriceInput.value = data.targetPrice || '';
+                currentSavingsInput.value = data.currentSavings || '';
+                currencySelector.value = data.currency || 'THB';
+                exchangeRateInput.value = data.exchangeRate || '';
+
+                if (data.image && data.image.startsWith('data:')) {
+                    goalImage.src = data.image;
+                    uploadText.style.opacity = '0';
+                    goalImage.style.opacity = '1';
+                } else {
+                    goalImage.src = "https://placehold.co/600x400/18181b/ffffff?text=อัปโหลดรูปภาพเป้าหมาย";
+                    uploadText.style.opacity = '1';
+                    goalImage.style.opacity = '1';
+                }
+            }
+        }
+
+        // Function to update the progress bar and text
+        function updateProgress() {
+            const targetPrice = parseFormattedNumber(targetPriceInput.value);
+            const currentSavings = parseFormattedNumber(currentSavingsInput.value);
+            const selectedCurrency = currencySelector.value;
+            const currencySymbol = getCurrencySymbol(selectedCurrency);
+
+            targetPriceLabel.textContent = `ราคาเป้าหมาย (${currencySymbol})`;
+            currentSavingsLabel.textContent = `เงินที่มีอยู่ตอนนี้ (${currencySymbol})`;
+
+            if (isNaN(targetPrice) || isNaN(currentSavings) || targetPrice <= 0) {
+                progressBar.style.width = '0%';
+                percentageText.textContent = '0.00%';
+                motivationalMessage.textContent = 'กรุณากรอกราคาเป้าหมายที่ถูกต้อง';
+                saveData();
+                return;
+            }
+
+            let percentage = (currentSavings / targetPrice) * 100;
+            if (percentage > 100) {
+                percentage = 100;
+            } else if (percentage < 0) {
+                percentage = 0;
+            }
+
+            progressBar.style.width = percentage.toFixed(2) + '%';
+            percentageText.textContent = percentage.toFixed(2) + '%';
+
+            const remainingAmount = targetPrice - currentSavings;
+            if (remainingAmount <= 0) {
+                motivationalMessage.textContent = 'ยินดีด้วย! คุณบรรลุเป้าหมายแล้ว!';
+            } else {
+                motivationalMessage.textContent = `เหลืออีก ${formatNumber(remainingAmount)} ${currencySymbol}! สู้ๆ นะ!`;
+            }
+            
+            saveData();
+        }
+
+        // Function to handle image upload and preview
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    goalImage.src = e.target.result;
+                    uploadText.style.opacity = '0';
+                    goalImage.style.opacity = '1';
+                    saveData();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        // Function to fetch the latest exchange rate from an external API
+        async function fetchExchangeRate() {
+            fetchRateBtn.disabled = true;
+            const originalText = fetchRateBtn.textContent;
+            fetchRateBtn.textContent = 'กำลังโหลด...';
+            rateMessage.textContent = 'กำลังดึงข้อมูลอัตราแลกเปลี่ยนล่าสุด...';
+            rateMessage.classList.remove('text-red-500');
+            rateMessage.classList.add('text-gray-400');
+            
+            const apiUrl = 'https://api.exchangerate-api.com/v4/latest/THB';
+
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+                
+                if (data.rates && data.rates.LAK) {
+                    const lakRate = data.rates.LAK;
+                    exchangeRateInput.value = formatNumber(lakRate);
+                    rateMessage.textContent = `อัปเดตอัตราแลกเปลี่ยนสำเร็จ: 1 THB = ${formatNumber(lakRate)} LAK`;
+                    saveData();
+                } else {
+                    throw new Error('Invalid API response structure');
+                }
+            } catch (error) {
+                console.error('Error fetching exchange rate:', error);
+                rateMessage.textContent = 'เกิดข้อผิดพลาดในการดึงข้อมูล. กรุณาลองอีกครั้ง';
+                rateMessage.classList.remove('text-gray-400');
+                rateMessage.classList.add('text-red-500');
+            } finally {
+                fetchRateBtn.disabled = false;
+                fetchRateBtn.textContent = originalText;
+            }
+        }
+
+        // Function to convert currency
+        function convertCurrency(direction) {
+            const exchangeRate = parseFormattedNumber(exchangeRateInput.value);
+            if (isNaN(exchangeRate) || exchangeRate <= 0) {
+                showModal('กรุณากรอกอัตราแลกเปลี่ยนที่ถูกต้อง');
+                return;
+            }
+
+            if (direction === 'thb_to_lak') {
+                const thbAmount = parseFormattedNumber(thbAmountInput.value);
+                if (!isNaN(thbAmount) && thbAmount !== 0) {
+                    const lakAmount = thbAmount * exchangeRate;
+                    lakAmountInput.value = formatNumber(lakAmount);
+                } else {
+                    lakAmountInput.value = '';
+                }
+            } else if (direction === 'lak_to_thb') {
+                const lakAmount = parseFormattedNumber(lakAmountInput.value);
+                if (!isNaN(lakAmount) && lakAmount !== 0) {
+                    const thbAmount = lakAmount / exchangeRate;
+                    thbAmountInput.value = formatNumber(thbAmount);
+                } else {
+                    thbAmountInput.value = '';
+                }
+            }
+            saveData();
+        }
+
+        // New and improved function to handle input formatting without a cursor jump.
+        let isFormatting = false;
+        function handleInput(event) {
+            if (isFormatting) return;
+            isFormatting = true;
+            
+            const input = event.target;
+            const originalValue = input.value;
+            const cursorPosition = input.selectionStart;
+
+            const cleanedString = originalValue.replace(/[^0-9.]/g, '');
+            let finalString = '';
+            const parts = cleanedString.split('.');
+            if (parts.length > 1) {
+                finalString = parts[0] + '.' + parts.slice(1).join('');
+            } else {
+                finalString = cleanedString;
+            }
+            
+            if (finalString.includes('.')) {
+                const [integerPart, decimalPart] = finalString.split('.');
+                let formattedInteger = new Intl.NumberFormat('th-TH').format(parseInt(integerPart) || 0);
+                if (decimalPart !== undefined) {
+                    input.value = `${formattedInteger}.${decimalPart}`;
+                } else {
+                    input.value = formattedInteger;
+                }
+            } else {
+                input.value = new Intl.NumberFormat('th-TH').format(parseInt(finalString) || 0);
+            }
+            
+            const lengthDifference = input.value.length - originalValue.length;
+            const newCursorPosition = cursorPosition + lengthDifference;
+            
+            input.setSelectionRange(newCursorPosition, newCursorPosition);
+            
+            updateProgress();
+            isFormatting = false;
+        }
+
+        // Function to handle the final formatting on blur
+        function handleBlur(event) {
+            const input = event.target;
+            const value = parseFormattedNumber(input.value);
+            if (!isNaN(value)) {
+                input.value = formatNumber(value);
+            } else if (input.value === '') {
+                input.value = '';
+            } else {
+                input.value = '0.00';
+            }
+            updateProgress();
+            saveData();
+        }
+
+
+        // --- GEMINI API INTEGRATIONS ---
+        // New function to break down the savings goal using Gemini LLM with structured output
+        async function breakdownGoal() {
+            const goalName = goalNameInput.value;
+            const targetPrice = parseFormattedNumber(targetPriceInput.value);
+            const currentSavings = parseFormattedNumber(currentSavingsInput.value);
+
+            if (!goalName || isNaN(targetPrice) || targetPrice <= 0 || targetPrice <= currentSavings) {
+                showModal('กรุณากรอกชื่อเป้าหมายและราคาเป้าหมายที่มากกว่ายอดออมปัจจุบัน');
+                return;
+            }
+
+            breakdownGoalBtn.disabled = true;
+            breakdownGoalBtn.innerHTML = 'กำลังสร้างแผน...';
+            breakdownResults.innerHTML = '<div class="flex justify-center items-center"><div class="animate-spin rounded-full h-8 w-8 border-4 border-t-4 border-emerald-200 border-opacity-50"></div><span class="ml-4 text-gray-400">กำลังสร้างแผนการออม...</span></div>';
+            
+            const remainingAmount = targetPrice - currentSavings;
+            const prompt = `Create a monthly savings plan in Thai for a goal named "${goalName}" with a remaining amount of ${remainingAmount} THB. The plan should be structured as an array of objects. Each object in the array should represent a monthly milestone. The plan should take no more than 6 months. Each milestone should have a 'month' (string, e.g., "เดือนที่ 1"), a 'targetAmount' (number), and a 'description' (string) explaining how to achieve that month's target. The sum of all targetAmounts should equal the remaining amount.`;
+
+            let chatHistory = [];
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
+
+            const payload = {
+                contents: chatHistory,
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "ARRAY",
+                        items: {
+                            type: "OBJECT",
+                            properties: {
+                                "month": { "type": "STRING" },
+                                "targetAmount": { "type": "NUMBER" },
+                                "description": { "type": "STRING" }
+                            },
+                            "propertyOrdering": ["month", "targetAmount", "description"]
+                        }
+                    }
+                }
+            };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    const jsonString = result.candidates[0].content.parts[0].text;
+                    const parsedJson = JSON.parse(jsonString);
+                    displayBreakdown(parsedJson);
+                } else {
+                    console.error('API response for goal breakdown was invalid.');
+                    breakdownResults.innerHTML = '<p class="text-red-500 text-center">ขออภัย, ไม่สามารถสร้างแผนการออมได้ในขณะนี้</p>';
+                }
+
+            } catch (error) {
+                console.error('Error generating goal breakdown:', error);
+                breakdownResults.innerHTML = '<p class="text-red-500 text-center">เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองอีกครั้ง</p>';
+            } finally {
+                breakdownGoalBtn.disabled = false;
+                breakdownGoalBtn.innerHTML = 'แบ่งเป้าหมายการออม ✨';
+                breakdownModal.classList.remove('hidden');
+            }
+        }
+
+        // Function to display the goal breakdown in the modal
+        function displayBreakdown(milestones) {
+            breakdownResults.innerHTML = ''; // Clear previous results
+            const currencySymbol = getCurrencySymbol(currencySelector.value);
+
+            milestones.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'breakdown-item';
+                div.innerHTML = `
+                    <h4 class="text-lg font-semibold text-emerald-300">${item.month}</h4>
+                    <p class="text-sm text-gray-300">จำนวนเงินเป้าหมาย: <span class="font-bold text-white">${formatNumber(item.targetAmount)} ${currencySymbol}</span></p>
+                    <p class="text-sm mt-2 text-gray-400">${item.description}</p>
+                `;
+                breakdownResults.appendChild(div);
+            });
+        }
+        
+        // Add event listeners for new Gemini API buttons
+        breakdownGoalBtn.addEventListener('click', breakdownGoal);
+
+        // Add event listeners for custom modal
+        closeModalBtn.addEventListener('click', () => {
+            customModal.classList.add('hidden');
+        });
+        closeBreakdownModalBtn.addEventListener('click', () => {
+            breakdownModal.classList.add('hidden');
+        });
+
+        // Add event listeners for input fields for live formatting
+        const numberInputs = [targetPriceInput, currentSavingsInput, exchangeRateInput, thbAmountInput];
+
+        numberInputs.forEach(input => {
+            input.addEventListener('input', handleInput);
+            input.addEventListener('blur', handleBlur);
+        });
+
+        // Add event listeners for existing functionality
+        goalNameInput.addEventListener('input', updateProgress);
+        currencySelector.addEventListener('change', updateProgress);
+        imageUploader.addEventListener('change', handleImageUpload);
+        convertToLakBtn.addEventListener('click', () => convertCurrency('thb_to_lak'));
+        convertToThbBtn.addEventListener('click', () => convertCurrency('lak_to_thb'));
+        
+        // The following two listeners are for currency converter to clear the other field when one is edited.
+        thbAmountInput.addEventListener('input', () => { 
+            lakAmountInput.value = ''; 
+        });
+        lakAmountInput.addEventListener('input', () => { 
+            thbAmountInput.value = ''; 
+        });
+
+        fetchRateBtn.addEventListener('click', fetchExchangeRate);
+
+        // Initial call to set the progress bar state on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            updateProgress();
+        });
+    </script>
+
 </body>
 </html>
