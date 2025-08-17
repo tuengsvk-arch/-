@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Savings Tracker</title>
+    <title>Multi-Goal Savings Tracker</title>
     <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,16 +47,6 @@
             width: 400px;
             text-align: center;
         }
-        .breakdown-modal-content {
-            max-width: 90%;
-            width: 600px;
-        }
-        .breakdown-item {
-            background-color: #2D3748;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            margin-bottom: 0.75rem;
-        }
         /* Hide the number input spinner buttons */
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button {
@@ -66,20 +56,27 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
+        /* Custom cursor for actionable elements */
+        .cursor-pointer, .goal-item {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body class="p-4 md:p-8 flex items-center justify-center min-h-screen">
     
-    <!-- Main container for a balanced, side-by-side layout on larger screens -->
+    <!-- Main container for a balanced layout on larger screens -->
     <div class="container mx-auto flex flex-col md:flex-row items-start md:space-x-8">
-
-        <!-- Savings Tracker Section -->
-        <div class="w-full md:w-1/2 bg-zinc-900 rounded-xl p-6 md:p-8 shadow-lg mb-8 md:mb-0">
+    
+        <!-- Right Column: Goal Detail Section -->
+        <div id="detail-view" class="w-full md:w-1/2 bg-zinc-900 rounded-xl p-6 md:p-8 shadow-lg hidden">
+            <button id="back-btn" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg mb-6">
+                &larr; กลับ
+            </button>
             <h1 class="text-3xl md:text-4xl font-bold text-center text-white mb-6">
-                เป้าหมายการออมของคุณ
+                รายละเอียดเป้าหมาย
             </h1>
-
-            <!-- Image section with file upload -->
+            
+            <!-- Goal Image and Inputs -->
             <div class="relative w-full h-64 md:h-80 bg-zinc-800 rounded-xl flex items-center justify-center mb-6 overflow-hidden border-2 border-dashed border-gray-700">
                 <img id="goal-image" src="https://placehold.co/600x400/18181b/ffffff?text=อัปโหลดรูปภาพเป้าหมาย" alt="Goal Image" class="w-full h-full object-cover transition-opacity duration-300">
                 <label for="image-uploader" class="absolute inset-0 flex items-center justify-center cursor-pointer text-gray-500 hover:text-gray-400">
@@ -88,7 +85,6 @@
                 </label>
             </div>
 
-            <!-- Input fields section -->
             <div class="space-y-4 mb-6">
                 <div>
                     <label for="goal-name" class="block text-gray-400 font-medium mb-1">ชื่อเป้าหมาย</label>
@@ -126,78 +122,110 @@
                 </div>
             </div>
 
-            <!-- Motivational message and AI button -->
+            <!-- Motivational message -->
             <div class="relative">
                 <p id="motivational-message" class="text-center text-gray-400 text-sm italic">
                     เหลืออีก 0 บาท! สู้ๆ นะ!
                 </p>
             </div>
             
-            <!-- New Gemini AI Feature: Goal Breakdown -->
-            <button id="breakdown-goal-btn" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md mt-4">
-                แบ่งเป้าหมายการออม ✨
-            </button>
+            <!-- Delete Button -->
+            <div class="grid grid-cols-1 gap-4 mt-4">
+                <button id="delete-goal-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md">
+                    ลบเป้าหมาย
+                </button>
+            </div>
         </div>
+        
+        <!-- Left Column: Main List and Currency Converter -->
+        <div class="w-full md:w-1/2 flex flex-col space-y-8">
+            <!-- Goals List Section -->
+            <div id="main-view" class="w-full bg-zinc-900 rounded-xl p-6 md:p-8 shadow-lg">
+                <h1 class="text-3xl md:text-4xl font-bold text-center text-white mb-6">
+                    เป้าหมายการออมของคุณ
+                </h1>
+                
+                <!-- Goals list container -->
+                <div id="goals-list" class="space-y-4">
+                    <!-- Goal items will be inserted here by JavaScript -->
+                    <p id="no-goals-message" class="text-gray-400 text-center italic">
+                        ยังไม่มีเป้าหมายการออม. คลิกเพิ่มเป้าหมายเพื่อเริ่มต้น!
+                    </p>
+                </div>
+                
+                <button id="add-goal-btn" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md mt-6">
+                    + เพิ่มเป้าหมายใหม่
+                </button>
+            </div>
 
-        <!-- Currency Converter Section -->
-        <div class="w-full md:w-1/2 bg-zinc-900 rounded-xl p-6 md:p-8 shadow-lg">
-            <h2 class="text-2xl font-bold text-white mb-4 text-center">
-                เครื่องมือคำนวณอัตราแลกเปลี่ยน
-            </h2>
-            <div class="space-y-4">
-                <div>
-                    <label for="exchange-rate" class="block text-gray-400 font-medium mb-1">อัตราแลกเปลี่ยน (เช่น 1 THB = 700 LAK)</label>
-                    <div class="flex items-center space-x-2">
-                        <input type="text" id="exchange-rate" placeholder="กรอกอัตราแลกเปลี่ยน" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right" placeholder="0">
-                        <button id="fetch-rate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-lg transition duration-300 transform hover:scale-105 shadow-md whitespace-nowrap text-sm">
-                            อัปเดตอัตราแลกเปลี่ยน
+             <!-- Currency Converter Section -->
+            <div class="w-full bg-zinc-900 rounded-xl p-6 md:p-8 shadow-lg">
+                <h2 class="text-2xl font-bold text-white mb-4 text-center">
+                    เครื่องมือคำนวณอัตราแลกเปลี่ยน
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label for="exchange-rate" class="block text-gray-400 font-medium mb-1">อัตราแลกเปลี่ยน (เช่น 1 THB = 700 LAK)</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="exchange-rate" placeholder="กรอกอัตราแลกเปลี่ยน" value="" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right" placeholder="0">
+                            <button id="fetch-rate-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold p-3 rounded-lg transition duration-300 transform hover:scale-105 shadow-md whitespace-nowrap text-sm">
+                                อัปเดตอัตราแลกเปลี่ยน
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="thb-amount" class="block text-gray-400 font-medium mb-1">จำนวนเงิน (บาท)</label>
+                            <input type="text" id="thb-amount" placeholder="กรอกจำนวนเงินบาท" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right">
+                        </div>
+                        <div>
+                            <label for="lak-amount" class="block text-gray-400 font-medium mb-1">จำนวนเงิน (กีบ)</label>
+                            <input type="text" id="lak-amount" placeholder="จำนวนเงินกีบ" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right" disabled>
+                        </div>
+                    </div>
+                    <!-- Currency buttons moved to the bottom -->
+                    <div class="flex flex-col md:flex-row gap-4 mt-4">
+                        <button id="convert-to-lak" class="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md">
+                            คำนวณ บาท -> กีบ
+                        </button>
+                        <button id="convert-to-thb" class="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md">
+                            คำนวณ กีบ -> บาท
                         </button>
                     </div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="thb-amount" class="block text-gray-400 font-medium mb-1">จำนวนเงิน (บาท)</label>
-                        <input type="text" id="thb-amount" placeholder="กรอกจำนวนเงินบาท" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right">
-                    </div>
-                    <div>
-                        <label for="lak-amount" class="block text-gray-400 font-medium mb-1">จำนวนเงิน (กีบ)</label>
-                        <input type="text" id="lak-amount" placeholder="จำนวนเงินกีบ" class="w-full p-3 bg-zinc-800 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 text-right" disabled>
-                    </div>
-                </div>
-                <div class="flex flex-col md:flex-row gap-4">
-                    <button id="convert-to-lak" class="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md">
-                        คำนวณ บาท -> กีบ
-                    </button>
-                    <button id="convert-to-thb" class="w-full md:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 transform hover:scale-105 shadow-md">
-                        คำนวณ กีบ -> บาท
-                    </button>
-                </div>
+                <div id="rate-message" class="mt-4 text-center text-sm text-gray-500"></div>
             </div>
-            <div id="rate-message" class="mt-4 text-center text-sm text-gray-500"></div>
         </div>
+
     </div>
 
-    <!-- Custom Modal/Message Box -->
+    <!-- Custom Modal/Message Box for notifications and confirmation -->
     <div id="custom-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <p id="modal-message" class="text-white text-lg font-medium mb-4">ข้อความ</p>
-            <button id="close-modal-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">ปิด</button>
-        </div>
-    </div>
-
-    <!-- New Goal Breakdown Modal -->
-    <div id="breakdown-modal" class="modal-overlay hidden">
-        <div class="modal-content breakdown-modal-content text-left">
-            <h3 class="text-2xl font-bold text-white mb-4 text-center">แผนการออม ✨</h3>
-            <div id="breakdown-results" class="space-y-4 max-h-96 overflow-y-auto pr-2">
-                <!-- Breakdown results will be inserted here -->
+            <div class="flex justify-center gap-4">
+                <button id="close-modal-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">ปิด</button>
+                <button id="confirm-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg hidden">ยืนยัน</button>
             </div>
-            <button id="close-breakdown-modal-btn" class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">ปิด</button>
         </div>
     </div>
 
     <script>
+        // UUID generator for unique IDs
+        function uuidv4() {
+            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        }
+
         // Get references to all necessary DOM elements for Savings Tracker
+        const mainView = document.getElementById('main-view');
+        const detailView = document.getElementById('detail-view');
+        const goalsList = document.getElementById('goals-list');
+        const addGoalBtn = document.getElementById('add-goal-btn');
+        const backBtn = document.getElementById('back-btn');
+        const deleteGoalBtn = document.getElementById('delete-goal-btn');
+
         const targetPriceInput = document.getElementById('target-price');
         const currentSavingsInput = document.getElementById('current-savings');
         const goalNameInput = document.getElementById('goal-name');
@@ -220,25 +248,28 @@
         const fetchRateBtn = document.getElementById('fetch-rate-btn');
         const rateMessage = document.getElementById('rate-message');
         
-        // New Gemini API Buttons
-        const breakdownGoalBtn = document.getElementById('breakdown-goal-btn');
-
         // Custom Modal elements
         const customModal = document.getElementById('custom-modal');
         const modalMessage = document.getElementById('modal-message');
         const closeModalBtn = document.getElementById('close-modal-btn');
-        
-        // Goal Breakdown Modal elements
-        const breakdownModal = document.getElementById('breakdown-modal');
-        const breakdownResults = document.getElementById('breakdown-results');
-        const closeBreakdownModalBtn = document.getElementById('close-breakdown-modal-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
-        const STORAGE_KEY = 'savingsTrackerData';
+        const STORAGE_KEY = 'multiGoalSavingsTrackerData';
+        let goals = [];
+        let currentGoalId = null;
+        let deleteConfirmCount = 0; // New counter for delete confirmation
 
         // Helper function to show a custom modal message
-        function showModal(message) {
+        function showModal(message, isConfirmation = false) {
             modalMessage.textContent = message;
             customModal.classList.remove('hidden');
+            if (isConfirmation) {
+                confirmDeleteBtn.classList.remove('hidden');
+                closeModalBtn.textContent = 'ยกเลิก';
+            } else {
+                confirmDeleteBtn.classList.add('hidden');
+                closeModalBtn.textContent = 'ปิด';
+            }
         }
 
         // Helper function to format a number with commas as a whole number
@@ -272,30 +303,85 @@
         
         // Function to save data to localStorage
         function saveData() {
-            const data = {
-                goalName: goalNameInput.value,
-                targetPrice: targetPriceInput.value,
-                currentSavings: currentSavingsInput.value,
-                currency: currencySelector.value,
-                image: goalImage.src,
-                exchangeRate: exchangeRateInput.value
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(goals));
         }
 
         // Function to load data from localStorage
         function loadData() {
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (savedData) {
-                const data = JSON.parse(savedData);
-                goalNameInput.value = data.goalName || '';
-                targetPriceInput.value = data.targetPrice || '';
-                currentSavingsInput.value = data.currentSavings || '';
-                currencySelector.value = data.currency || 'THB';
-                exchangeRateInput.value = data.exchangeRate || '';
+                goals = JSON.parse(savedData);
+            }
+        }
 
-                if (data.image && data.image.startsWith('data:')) {
-                    goalImage.src = data.image;
+        // Function to render the list of goals on the main page
+        function renderGoalsList() {
+            goalsList.innerHTML = '';
+            if (goals.length === 0) {
+                goalsList.innerHTML = `
+                    <p id="no-goals-message" class="text-gray-400 text-center italic">
+                        ยังไม่มีเป้าหมายการออม. คลิกเพิ่มเป้าหมายเพื่อเริ่มต้น!
+                    </p>
+                `;
+                return;
+            }
+
+            goals.forEach(goal => {
+                const goalElement = document.createElement('div');
+                goalElement.className = `goal-item bg-zinc-800 rounded-lg p-4 flex items-center justify-between cursor-pointer transition-colors duration-200 hover:bg-zinc-700`;
+                goalElement.dataset.id = goal.id;
+
+                const currentAmount = parseFormattedNumber(goal.currentSavings);
+                const targetAmount = parseFormattedNumber(goal.targetPrice);
+                const percentage = targetAmount > 0 ? Math.round((currentAmount / targetAmount) * 100) : 0;
+                const currencySymbol = getCurrencySymbol(goal.currency);
+
+                goalElement.innerHTML = `
+                    <div class="flex-grow">
+                        <h3 class="text-lg font-bold">${goal.goalName || 'เป้าหมายใหม่'}</h3>
+                        <p class="text-sm text-gray-400">${formatNumber(currentAmount)} ${currencySymbol} / ${formatNumber(targetAmount)} ${currencySymbol}</p>
+                        <div class="w-full bg-zinc-700 rounded-full h-2 mt-2">
+                            <div class="bg-purple-500 h-full rounded-full" style="width: ${Math.min(100, percentage)}%;"></div>
+                        </div>
+                    </div>
+                    <span class="text-white text-lg ml-4">${percentage}%</span>
+                `;
+                goalsList.appendChild(goalElement);
+            });
+
+            // Add click listener for each goal item
+            document.querySelectorAll('.goal-item').forEach(item => {
+                item.addEventListener('click', (event) => {
+                    currentGoalId = event.currentTarget.dataset.id;
+                    loadGoalDetails();
+                    showView('detail');
+                });
+            });
+        }
+        
+        // Function to show/hide views
+        function showView(view) {
+            if (view === 'main') {
+                mainView.classList.remove('hidden');
+                detailView.classList.add('hidden');
+                renderGoalsList();
+            } else if (view === 'detail') {
+                mainView.classList.add('hidden');
+                detailView.classList.remove('hidden');
+            }
+        }
+
+        // Function to load details of a specific goal
+        function loadGoalDetails() {
+            const goal = goals.find(g => g.id === currentGoalId);
+            if (goal) {
+                goalNameInput.value = goal.goalName;
+                targetPriceInput.value = goal.targetPrice;
+                currentSavingsInput.value = goal.currentSavings;
+                currencySelector.value = goal.currency;
+                
+                if (goal.image && goal.image.startsWith('data:')) {
+                    goalImage.src = goal.image;
                     uploadText.style.opacity = '0';
                     goalImage.style.opacity = '1';
                 } else {
@@ -303,8 +389,52 @@
                     uploadText.style.opacity = '1';
                     goalImage.style.opacity = '1';
                 }
+                updateProgress();
             }
         }
+        
+        // Function to save the current goal's details
+        function saveCurrentGoal() {
+            if (!currentGoalId) return;
+            const goalIndex = goals.findIndex(g => g.id === currentGoalId);
+            if (goalIndex !== -1) {
+                goals[goalIndex].goalName = goalNameInput.value;
+                goals[goalIndex].targetPrice = targetPriceInput.value;
+                goals[goalIndex].currentSavings = currentSavingsInput.value;
+                goals[goalIndex].currency = currencySelector.value;
+                goals[goalIndex].image = goalImage.src.startsWith('data:') ? goalImage.src : '';
+                saveData();
+                renderGoalsList(); // Re-render the list to show changes
+            }
+        }
+
+        // --- IMPROVED DELETE CONFIRMATION LOGIC ---
+        function openDeleteModal() {
+            deleteConfirmCount = 0; // Reset counter
+            showModal('แตะปุ่มยืนยันด้านล่างเพื่อลบเป้าหมาย', true);
+            confirmDeleteBtn.textContent = `ยืนยันการลบ (1/5)`;
+        }
+
+        function handleConfirmDelete() {
+            deleteConfirmCount++;
+            if (deleteConfirmCount < 5) {
+                modalMessage.textContent = `แตะอีก ${5 - deleteConfirmCount} ครั้งเพื่อยืนยันการลบ`;
+                confirmDeleteBtn.textContent = `ยืนยันการลบ (${deleteConfirmCount + 1}/5)`;
+            } else {
+                executeDeleteGoal();
+                showModal('เป้าหมายถูกลบแล้ว');
+            }
+        }
+
+        function executeDeleteGoal() {
+            if (!currentGoalId) return;
+            goals = goals.filter(g => g.id !== currentGoalId);
+            saveData();
+            showView('main');
+            customModal.classList.add('hidden'); // Close the modal
+        }
+        // --- END OF NEW DELETE CONFIRMATION LOGIC ---
+
 
         // Function to update the progress bar and text
         function updateProgress() {
@@ -320,7 +450,7 @@
                 progressBar.style.width = '0%';
                 percentageText.textContent = '0%';
                 motivationalMessage.textContent = 'กรุณากรอกราคาเป้าหมายที่ถูกต้อง';
-                saveData();
+                saveCurrentGoal();
                 return;
             }
 
@@ -341,7 +471,7 @@
                 motivationalMessage.textContent = `เหลืออีก ${formatNumber(remainingAmount)} ${currencySymbol}! สู้ๆ นะ!`;
             }
             
-            saveData();
+            saveCurrentGoal();
         }
 
         // Function to handle image upload and preview
@@ -353,7 +483,7 @@
                     goalImage.src = e.target.result;
                     uploadText.style.opacity = '0';
                     goalImage.style.opacity = '1';
-                    saveData();
+                    saveCurrentGoal();
                 };
                 reader.readAsDataURL(file);
             }
@@ -445,7 +575,10 @@
             
             input.setSelectionRange(newCursorPosition, newCursorPosition);
             
-            updateProgress();
+            if (input.id === 'target-price' || input.id === 'current-savings') {
+                updateProgress();
+            }
+            saveData();
             isFormatting = false;
         }
 
@@ -460,122 +593,34 @@
             } else {
                 input.value = '0';
             }
-            updateProgress();
+            if (input.id === 'target-price' || input.id === 'current-savings') {
+                updateProgress();
+            }
             saveData();
         }
-
-
-        // --- GEMINI API INTEGRATIONS ---
-        // New function to break down the savings goal using Gemini LLM with structured output
-        async function breakdownGoal() {
-            const goalName = goalNameInput.value;
-            const targetPrice = parseFormattedNumber(targetPriceInput.value);
-            const currentSavings = parseFormattedNumber(currentSavingsInput.value);
-
-            if (!goalName || isNaN(targetPrice) || targetPrice <= 0 || targetPrice <= currentSavings) {
-                showModal('กรุณากรอกชื่อเป้าหมายและราคาเป้าหมายที่มากกว่ายอดออมปัจจุบัน');
-                return;
-            }
-
-            breakdownGoalBtn.disabled = true;
-            breakdownGoalBtn.innerHTML = 'กำลังสร้างแผน...';
-            breakdownResults.innerHTML = '<div class="flex justify-center items-center"><div class="animate-spin rounded-full h-8 w-8 border-4 border-t-4 border-emerald-200 border-opacity-50"></div><span class="ml-4 text-gray-400">กำลังสร้างแผนการออม...</span></div>';
-            
-            const remainingAmount = targetPrice - currentSavings;
-            const prompt = `Create a monthly savings plan in Thai for a goal named "${goalName}" with a remaining amount of ${remainingAmount} THB. The plan should be structured as an array of objects. Each object in the array should represent a monthly milestone. The plan should take no more than 6 months. Each milestone should have a 'month' (string, e.g., "เดือนที่ 1"), a 'targetAmount' (number), and a 'description' (string) explaining how to achieve that month's target. The sum of all targetAmounts should equal the remaining amount.`;
-
-            let chatHistory = [];
-            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-
-            const payload = {
-                contents: chatHistory,
-                generationConfig: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "ARRAY",
-                        items: {
-                            type: "OBJECT",
-                            properties: {
-                                "month": { "type": "STRING" },
-                                "targetAmount": { "type": "NUMBER" },
-                                "description": { "type": "STRING" }
-                            },
-                            "propertyOrdering": ["month", "targetAmount", "description"]
-                        }
-                    }
-                }
-            };
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                const result = await response.json();
-                
-                if (result.candidates && result.candidates.length > 0 &&
-                    result.candidates[0].content && result.candidates[0].content.parts &&
-                    result.candidates[0].content.parts.length > 0) {
-                    const jsonString = result.candidates[0].content.parts[0].text;
-                    const parsedJson = JSON.parse(jsonString);
-                    displayBreakdown(parsedJson);
-                } else {
-                    console.error('API response for goal breakdown was invalid.');
-                    breakdownResults.innerHTML = '<p class="text-red-500 text-center">ขออภัย, ไม่สามารถสร้างแผนการออมได้ในขณะนี้</p>';
-                }
-
-            } catch (error) {
-                console.error('Error generating goal breakdown:', error);
-                breakdownResults.innerHTML = '<p class="text-red-500 text-center">เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองอีกครั้ง</p>';
-            } finally {
-                breakdownGoalBtn.disabled = false;
-                breakdownGoalBtn.innerHTML = 'แบ่งเป้าหมายการออม ✨';
-                breakdownModal.classList.remove('hidden');
-            }
-        }
-
-        // Function to display the goal breakdown in the modal
-        function displayBreakdown(milestones) {
-            breakdownResults.innerHTML = ''; // Clear previous results
-            const currencySymbol = getCurrencySymbol(currencySelector.value);
-
-            milestones.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'breakdown-item';
-                div.innerHTML = `
-                    <h4 class="text-lg font-semibold text-emerald-300">${item.month}</h4>
-                    <p class="text-sm text-gray-300">จำนวนเงินเป้าหมาย: <span class="font-bold text-white">${formatNumber(item.targetAmount)} ${currencySymbol}</span></p>
-                    <p class="text-sm mt-2 text-gray-400">${item.description}</p>
-                `;
-                breakdownResults.appendChild(div);
-            });
-        }
-        
-        // Add event listeners for new Gemini API buttons
-        breakdownGoalBtn.addEventListener('click', breakdownGoal);
 
         // Add event listeners for custom modal
         closeModalBtn.addEventListener('click', () => {
             customModal.classList.add('hidden');
+            // Reset delete confirmation counter when modal is closed
+            deleteConfirmCount = 0;
         });
-        closeBreakdownModalBtn.addEventListener('click', () => {
-            breakdownModal.classList.add('hidden');
+        confirmDeleteBtn.addEventListener('click', handleConfirmDelete);
+
+        // Add event listeners for input fields for live formatting and saving
+        const goalInputs = [goalNameInput, targetPriceInput, currentSavingsInput, currencySelector];
+        goalInputs.forEach(input => {
+            input.addEventListener('change', saveCurrentGoal);
+            input.addEventListener('input', updateProgress);
         });
 
-        // Add event listeners for input fields for live formatting
-        const numberInputs = [targetPriceInput, currentSavingsInput, exchangeRateInput, thbAmountInput];
-
+        const numberInputs = [targetPriceInput, currentSavingsInput, exchangeRateInput, thbAmountInput, lakAmountInput];
         numberInputs.forEach(input => {
             input.addEventListener('input', handleInput);
             input.addEventListener('blur', handleBlur);
         });
 
         // Add event listeners for existing functionality
-        goalNameInput.addEventListener('input', updateProgress);
-        currencySelector.addEventListener('change', updateProgress);
         imageUploader.addEventListener('change', handleImageUpload);
         convertToLakBtn.addEventListener('click', () => convertCurrency('thb_to_lak'));
         convertToThbBtn.addEventListener('click', () => convertCurrency('lak_to_thb'));
@@ -590,10 +635,36 @@
 
         fetchRateBtn.addEventListener('click', fetchExchangeRate);
 
+        // Add new goal and navigation listeners
+        addGoalBtn.addEventListener('click', () => {
+            const newGoal = {
+                id: uuidv4(),
+                goalName: '',
+                targetPrice: '',
+                currentSavings: '',
+                currency: 'THB',
+                image: ''
+            };
+            goals.push(newGoal);
+            currentGoalId = newGoal.id;
+            saveData();
+            loadGoalDetails();
+            showView('detail');
+        });
+
+        backBtn.addEventListener('click', () => {
+            currentGoalId = null;
+            showView('main');
+        });
+
+        // Updated event listener for delete button to open the new confirmation modal
+        deleteGoalBtn.addEventListener('click', openDeleteModal);
+
+
         // Initial call to set the progress bar state on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
-            updateProgress();
+            showView('main');
         });
     </script>
 
